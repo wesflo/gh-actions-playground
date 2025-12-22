@@ -1,0 +1,45 @@
+{
+  "name": "@wesflo/gh-actions-playground",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Hello World Lit component + utils, built with Vite, tested with Vitest + happy-dom",
+  "license": "MIT",
+  "author": "wesflo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wesflo/gh-actions-playground.git"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "dist-iife"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest",
+    "test:ci": "vitest run --coverage",
+    "build": "vite build",
+    "build:iife": "vite build -c vite.iife.config.ts"
+  },
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "happy-dom": "^15.11.7",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}
