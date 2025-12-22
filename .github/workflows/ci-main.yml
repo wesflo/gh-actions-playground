@@ -3,13 +3,6 @@ name: CI (main)
 on:
   push:
     branches: ["main"]
-    # optional: wenn du nicht bei Docs-only laufen willst:
-    # paths:
-    #   - "src/**"
-    #   - "package.json"
-    #   - "package-lock.json"
-    #   - "vite*.config.ts"
-    #   - "tsconfig*.json"
 
 # verhindert Doppel-Runs bei schnellen Pushes
 concurrency:
