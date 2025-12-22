@@ -80,14 +80,17 @@ jobs:
 
   publish-npm:
     needs: bump-version
-    # "Play button": Environment approval gate
     environment: release
     uses: wesflo/gh-actions-workflows/.github/workflows/publish-github-packages.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
       npm_scope: "@wesflo"
-      build_command: "npm run build"
+
+      build_mode: "skip"
+      download_artifact: true
+      artifact_name: "build-output"
+
       publish_command: "npm publish"
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
