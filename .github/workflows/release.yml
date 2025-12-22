@@ -18,32 +18,30 @@ jobs:
       node_version: ${{ vars.NODE_VERSION || '20' }}
       test_command: "npm run test:c"
 
-  build:
+  build-lib:
     needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: build lib
-        uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-        with:
-          workdir: ${{ vars.WORKDIR || '.' }}
-          node_version: ${{ vars.NODE_VERSION || '20' }}
-          build_command: "npm run build"
-          upload_artifacts: true
-          artifact_name: "dist-lib"
-      - name: build iife
-        needs: test
-        uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-        with:
-          workdir: ${{ vars.WORKDIR || '.' }}
-          node_version: ${{ vars.NODE_VERSION || '20' }}
-          build_command: "npm run build:iife"
-          upload_artifacts: true
-          artifact_name: "dist-iife"
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      build_command: "npm run build"
+      upload_artifacts: true
+      artifact_name: "dist-lib"
+
+  build-iife:
+    needs: test
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      build_command: "npm run build:iife"
+      upload_artifacts: true
+      artifact_name: "dist-iife"
 
   approval:
     name: Manual Approval
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build-lib, build-iife]
     if: success() # Only proceed if build job succeeds
 
     permissions:
