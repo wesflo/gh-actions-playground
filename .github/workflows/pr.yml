@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@v1
+    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
