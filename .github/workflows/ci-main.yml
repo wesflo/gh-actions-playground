@@ -1,0 +1,48 @@
+name: CI (main)
+
+on:
+  push:
+    branches: ["main"]
+    # optional: wenn du nicht bei Docs-only laufen willst:
+    # paths:
+    #   - "src/**"
+    #   - "package.json"
+    #   - "package-lock.json"
+    #   - "vite*.config.ts"
+    #   - "tsconfig*.json"
+
+# verhindert Doppel-Runs bei schnellen Pushes
+concurrency:
+  group: ci-main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # verhindert Loop, falls ein späterer Release-Job einen Commit pusht
+    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
+    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      test_command: "npm run test:c"
+
+  build-lib:
+    needs: test
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      build_command: "npm run build"
+      iife_command: ""
+      upload_artifacts: true
+
+  build-iife:
+    needs: test
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      # wir missbrauchen build_command hier bewusst, weil es "ein Kommando" ist
+      build_command: "npm run build:iife"
+      iife_command: ""
+      upload_artifacts: true

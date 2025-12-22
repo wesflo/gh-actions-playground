@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      test_command: "npm run test:c"
+
+  build-lib:
+    needs: test
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      build_command: "npm run build"
+      iife_command: ""
+      upload_artifacts: true
+
+  build-iife:
+    needs: test
+    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      build_command: "npm run build:iife"
+      iife_command: ""
+      upload_artifacts: true
+
+  bump-version:
+    needs: [build-lib, build-iife]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ${{ vars.WORKDIR || '.' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ vars.NODE_VERSION || '20' }}
+          cache: npm
+          cache-dependency-path: ${{ (vars.WORKDIR && format('{0}/package-lock.json', vars.WORKDIR)) || 'package-lock.json' }}
+
+      - run: npm ci
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version (creates commit + tag)
+        run: npm version ${{ inputs.bump }} -m "chore(release): %s"
+
+      - name: Push commit + tags
+        run: git push --follow-tags
+
+  publish-npm:
+    needs: bump-version
+    # "Play button": Environment approval gate
+    environment: release
+    uses: wesflo/gh-actions-workflows/.github/workflows/publish-github-packages.yml@main
+    with:
+      workdir: ${{ vars.WORKDIR || '.' }}
+      node_version: ${{ vars.NODE_VERSION || '20' }}
+      npm_scope: "@wesflo"
+      build_command: "npm run build"
+      publish_command: "npm publish"
+    secrets:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+  deploy-iife:
+    needs: bump-version
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "IIFE deployment would run here (placeholder)"
