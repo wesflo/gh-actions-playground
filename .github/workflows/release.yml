@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: release-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -18,29 +18,50 @@ jobs:
       node_version: ${{ vars.NODE_VERSION || '20' }}
       test_command: "npm run test:c"
 
-  build-lib:
+  build:
     needs: test
-    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      build_command: "npm run build"
-      upload_artifacts: true
-      artifact_name: "dist-lib"
+    runs-on: ubuntu-latest
+    steps:
+      - name: build lib
+        uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+        with:
+          workdir: ${{ vars.WORKDIR || '.' }}
+          node_version: ${{ vars.NODE_VERSION || '20' }}
+          build_command: "npm run build"
+          upload_artifacts: true
+          artifact_name: "dist-lib"
+      - name: build iife
+        needs: test
+        uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
+        with:
+          workdir: ${{ vars.WORKDIR || '.' }}
+          node_version: ${{ vars.NODE_VERSION || '20' }}
+          build_command: "npm run build:iife"
+          upload_artifacts: true
+          artifact_name: "dist-iife"
 
-  build-iife:
-    needs: test
-    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      build_command: "npm run build:iife"
-      upload_artifacts: true
-      artifact_name: "dist-iife"
+  approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    needs: build
+    if: success() # Only proceed if build job succeeds
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Await Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: user1,user2,user3,group1,group2 # Replace with GitHub usernames, with the free version you can only have an issue assigned to one username
+          minimum-approvals: 1
+          issue-title: "Manual Approval Required for Terraform Apply"
+          issue-body: "Please approve or deny the deployment."
 
   release:
     name: Release to NPM
-    needs: [build-lib, build-iife]
+    needs: approval
     runs-on: ubuntu-latest
 
     # optional: echtes Approval-Gate (Environment muss Required reviewers haben)
@@ -110,10 +131,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version + tag + push
+      - name: Bump version (no commit/tag yet)
         run: |
-          npm version ${{ steps.bump.outputs.value }} -m "chore(release): %s"
-          git push --follow-tags
+          npm version ${{ steps.bump.outputs.value }} --no-git-tag-version
 
       - name: Build (lib)
         run: npm run build
@@ -125,6 +145,17 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: npm publish
+
+      - name: Commit + tag + push (only after successful publish)
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git add package.json package-lock.json
+          
+          git commit -m "chore(release): v$VERSION"
+          
+          git tag "v$VERSION"
+          git push
+          git push --tags
 
       - name: IIFE deploy (placeholder)
         run: echo "IIFE deployment would run here"
