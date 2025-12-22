@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: release-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -38,27 +38,9 @@ jobs:
       upload_artifacts: true
       artifact_name: "dist-iife"
 
-  approval:
-    name: Manual Approval
-    runs-on: ubuntu-latest
-    needs: [build-lib, build-iife]
-    if: success()
-
-    permissions:
-      issues: write
-
-    steps:
-      - name: Await Manual Approval
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: *
-          minimum-approvals: 1
-          issue-title: "Manual Approval Required for Terraform Apply"
-          issue-body: "Please approve or deny the deployment."
-
   release:
     name: Release to NPM
-    needs: approval
+    needs: [build-lib, build-iife]
     runs-on: ubuntu-latest
 
     # optional: echtes Approval-Gate (Environment muss Required reviewers haben)
@@ -128,9 +110,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version (no commit/tag yet)
+      - name: Bump version + tag + push
         run: |
-          npm version ${{ steps.bump.outputs.value }} --no-git-tag-version
+          npm version ${{ steps.bump.outputs.value }} -m "chore(release): %s"
+          git push --follow-tags
 
       - name: Build (lib)
         run: npm run build
@@ -142,17 +125,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: npm publish
-
-      - name: Commit + tag + push (only after successful publish)
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          git add package.json package-lock.json
-          
-          git commit -m "chore(release): v$VERSION"
-          
-          git tag "v$VERSION"
-          git push
-          git push --tags
 
       - name: IIFE deploy (placeholder)
         run: echo "IIFE deployment would run here"
