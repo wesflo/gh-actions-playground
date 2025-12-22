@@ -1,5 +1,5 @@
 import { LitElement, css, html } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { formatHello } from '../utils/format';
 
 @customElement('gh-hello')
@@ -29,14 +29,20 @@ export class GhHello extends LitElement {
   `;
 
     @property({ type: String }) name: string = 'World';
+    @state() startCount: number = 1;
 
     render() {
         return html`
       <div class="card">
-        <p class="title">gh-hello</p>
+        <p class="title">gh-hello: ${this.startCount}</p>
         <p class="text">${formatHello(this.name)}</p>
+          <button @click="${this.setCount}"></button>
       </div>
     `;
+    }
+
+    setCount = () => {
+        this.startCount += 1;
     }
 }
 
