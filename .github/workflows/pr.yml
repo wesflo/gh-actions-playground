@@ -12,16 +12,4 @@ jobs:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
 
-  yeyy:
-    runs-on: ubuntu-latest
-    needs: test
-    if: ${{ needs.test.result == 'success' }}
-    steps:
-      - run: echo "Yeyy"
 
-  ohhh:
-    runs-on: ubuntu-latest
-    needs: test
-    if: ${{ always() && needs.test.result == 'failure' }}
-    steps:
-      - run: echo "ohhh"
