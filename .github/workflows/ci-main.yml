@@ -33,8 +33,8 @@ jobs:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
       build_command: "npm run build"
-      iife_command: ""
       upload_artifacts: true
+      artifact_name: "dist-lib"
 
   build-iife:
     needs: test
@@ -42,7 +42,7 @@ jobs:
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
-      # wir missbrauchen build_command hier bewusst, weil es "ein Kommando" ist
       build_command: "npm run build:iife"
       iife_command: ""
       upload_artifacts: true
+      artifact_name: "dist-iife"
