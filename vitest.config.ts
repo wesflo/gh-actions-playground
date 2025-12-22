@@ -4,10 +4,17 @@ export default defineConfig({
     test: {
         environment: 'happy-dom',
         globals: true,
-        include: ['test/**/*.spec.ts'],
+        include: ['src/**/*.spec.ts'],
         coverage: {
             provider: 'v8',
-            reporter: ['text', 'html', 'lcov']
+            reporter: ['text', 'html', 'lcov'],
+            include: ['src/utils/**/*.ts'],
+            exclude: [
+                '**/*.spec.ts',
+                'src/index.ts',
+                'src/component/**',
+                'vite*.config.ts'
+            ]
         }
     }
 });

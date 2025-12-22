@@ -28,7 +28,7 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest",
-    "test:ci": "vitest run --coverage",
+    "test:c": "vitest run --coverage",
     "build": "vite build",
     "build:iife": "vite build -c vite.iife.config.ts"
   },
