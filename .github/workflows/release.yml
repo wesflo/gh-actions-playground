@@ -34,6 +34,7 @@ jobs:
       build_command: "npm run build"
       iife_command: ""
       upload_artifacts: true
+      artifact_name: "dist-lib"
 
   build-iife:
     needs: test
@@ -44,6 +45,7 @@ jobs:
       build_command: "npm run build:iife"
       iife_command: ""
       upload_artifacts: true
+      artifact_name: "dist-iife"
 
   bump-version:
     needs: [build-lib, build-iife]
