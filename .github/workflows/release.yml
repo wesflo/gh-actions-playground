@@ -8,10 +8,7 @@ on:
         type: choice
         required: true
         default: patch
-        options:
-          - patch
-          - minor
-          - major
+        options: [patch, minor, major]
 
 concurrency:
   group: release
@@ -47,59 +44,64 @@ jobs:
       upload_artifacts: true
       artifact_name: "dist-iife"
 
-  bump-version:
+  hold:
+    name: "Approval (Play)"
     needs: [build-lib, build-iife]
     runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - run: echo "Approved. Proceeding with bump + publish."
+
+  release:
+    needs: hold
+    runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
+      packages: write
     defaults:
       run:
         working-directory: ${{ vars.WORKDIR || '.' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node (GitHub Packages)
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ vars.NODE_VERSION || '20' }}
           cache: npm
           cache-dependency-path: ${{ (vars.WORKDIR && format('{0}/package-lock.json', vars.WORKDIR)) || 'package-lock.json' }}
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@wesflo"
 
-      - run: npm ci
+      - name: Install
+        run: npm ci
 
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version (creates commit + tag)
+      - name: Bump version (commit + tag)
         run: npm version ${{ inputs.bump }} -m "chore(release): %s"
+
+      - name: Build (lib)
+        run: npm run build
+
+      - name: Build (iife)
+        run: npm run build:iife
+
+      - name: Publish (GitHub Packages)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: npm publish
 
       - name: Push commit + tags
         run: git push --follow-tags
 
-  publish-npm:
-    needs: bump-version
-    environment: release
-    uses: wesflo/gh-actions-workflows/.github/workflows/publish-github-packages.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      npm_scope: "@wesflo"
-
-      build_mode: "skip"
-      download_artifact: true
-      artifact_name: "build-output"
-
-      publish_command: "npm publish"
-    secrets:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-  deploy-iife:
-    needs: bump-version
-    environment: release
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "IIFE deployment would run here (placeholder)"
+      - name: IIFE deployment (placeholder)
+        run: echo "IIFE deployment would run here"
