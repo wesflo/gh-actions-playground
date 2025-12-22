@@ -30,10 +30,15 @@
     "test": "vitest",
     "test:c": "vitest run --coverage",
     "build": "vite build",
+    "bundle": "npm run build && npm publish",
+    "bundle:local": "npm run build && npm pack",
     "build:iife": "vite build -c vite.iife.config.ts"
   },
   "dependencies": {
     "lit": "^3.2.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.8",
