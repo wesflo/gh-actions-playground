@@ -1,29 +1,17 @@
-name: Release
+name: Release (labels -> version)
 
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: "Version bump"
-        type: choice
-        required: true
-        default: patch
-        options: [patch, minor, major]
+  push:
+    branches: ["main"]
 
 concurrency:
-  group: release
+  group: release-main
   cancel-in-progress: false
 
 jobs:
-  guard:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ensure main branch
-        if: ${{ github.ref_name != 'main' }}
-        run: |
-          echo "This workflow must be run on main. Current ref: ${{ github.ref_name }}"
-          exit 1
   test:
+    # verhindert Loop bei release-commits vom Bot
+    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
     uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
@@ -37,7 +25,6 @@ jobs:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
       build_command: "npm run build"
-      iife_command: ""
       upload_artifacts: true
       artifact_name: "dist-lib"
 
@@ -48,25 +35,22 @@ jobs:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
       build_command: "npm run build:iife"
-      iife_command: ""
       upload_artifacts: true
       artifact_name: "dist-iife"
 
-  hold:
-    name: "Approval (Play)"
+  release:
+    name: Release to NPM
     needs: [build-lib, build-iife]
     runs-on: ubuntu-latest
-    environment: release
-    steps:
-      - run: echo "Approved. Proceeding with bump + publish."
 
-  release:
-    needs: hold
-    runs-on: ubuntu-latest
+    # optional: echtes Approval-Gate (Environment muss Required reviewers haben)
     environment: release
+
     permissions:
       contents: write
       packages: write
+      pull-requests: read
+
     defaults:
       run:
         working-directory: ${{ vars.WORKDIR || '.' }}
@@ -76,6 +60,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Determine bump from PR labels
+        id: bump
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.sha;
+
+            // PRs associated with this commit (works for merge/squash in most setups)
+            const prs = await github.request('GET /repos/{owner}/{repo}/commits/{ref}/pulls', {
+              owner,
+              repo,
+              ref: sha,
+              headers: { accept: 'application/vnd.github.groot-preview+json' }
+            });
+
+            const pr = prs.data?.[0];
+            const labels = (pr?.labels || []).map(l => l.name);
+
+            let bump = 'patch';
+            if (labels.includes('release:major')) bump = 'major';
+            else if (labels.includes('release:minor')) bump = 'minor';
+            else if (labels.includes('release:patch')) bump = 'patch';
+
+            core.info(`Commit: ${sha}`);
+            core.info(`PR: ${pr ? `#${pr.number}` : 'none found'}`);
+            core.info(`Labels: ${labels.length ? labels.join(', ') : '(none)'}`);
+            core.info(`Bump: ${bump}`);
+
+            core.setOutput('value', bump);
 
       - name: Setup Node (GitHub Packages)
         uses: actions/setup-node@v4
@@ -94,9 +110,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version (commit + tag)
+      - name: Bump version + tag + push
         run: |
-          npm version ${{ inputs.bump }} -m "chore(release): %s"
+          npm version ${{ steps.bump.outputs.value }} -m "chore(release): %s"
+          git push --follow-tags
 
       - name: Build (lib)
         run: npm run build
@@ -109,8 +126,5 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: npm publish
 
-      - name: Push commit + tags
-        run: git push --follow-tags
-
-      - name: IIFE deployment (placeholder)
+      - name: IIFE deploy (placeholder)
         run: echo "IIFE deployment would run here"
