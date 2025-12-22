@@ -35,7 +35,6 @@ jobs:
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
-      build_command: "npm run build:iife"
-      iife_command: ""
+      iife_command: "npm run build:iife"
       upload_artifacts: true
       artifact_name: "dist-iife"
