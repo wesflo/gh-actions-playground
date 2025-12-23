@@ -8,6 +8,7 @@ permissions:
   contents: write
   packages: write
   pull-requests: read
+  id-token: write   # wichtig für AWS OIDC (kann auch job-level gesetzt werden)
 
 concurrency:
   group: release-main
@@ -15,7 +16,6 @@ concurrency:
 
 jobs:
   test:
-    # verhindert Loop bei release-commits vom Bot
     if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
     uses: wesflo/gh-actions-workflows/.github/workflows/test.yml@main
     with:
@@ -41,9 +41,39 @@ jobs:
       upload_artifacts: true
       artifact_name: "dist-iife"
 
+  deploy-preprod:
+    name: Deploy preprod (S3)
+    needs: [test, build-iife]
+    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
+    environment: preprod
+    uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
+    with:
+      artifact_name: "dist-iife"
+      dist_dir: "dist"
+      bucket: "wesflo-preprod-demo"
+      region: ${{ vars.AWS_REGION || 'eu-central-1' }}
+      cache_control: "public,max-age=300"
+    secrets:
+      aws_role_arn: ${{ secrets.AWS_ROLE_ARN_PREPROD }}
+
+  deploy-prod:
+    name: Deploy prod (S3)
+    needs: [deploy-preprod]
+    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
+    environment: prod
+    uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
+    with:
+      artifact_name: "dist-iife"
+      dist_dir: "dist"
+      bucket: "wesflo-prod-demo"
+      region: ${{ vars.AWS_REGION || 'eu-central-1' }}
+      cache_control: "public,max-age=3600"
+    secrets:
+      aws_role_arn: ${{ secrets.AWS_ROLE_ARN_PROD }}
+
   publish:
     name: Publish to Registry
-    needs: [test, build-lib, build-iife]
+    needs: [test, build-lib]
     uses: wesflo/gh-actions-workflows/.github/workflows/publish.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
@@ -52,3 +82,17 @@ jobs:
       npm_registry: ${{ vars.NPM_REGISTRY || 'https://npm.pkg.github.com' }}
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+  activate-release:
+    name: Activate release (write DB version)
+    needs: [deploy-prod]
+    environment: prod-db   # separates Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call release activation API
+        run: |
+          echo "Hier wäre dann das CB getriggert"
+#          curl -X POST "${{ secrets.RELEASE_API_URL }}" \
+#            -H "Authorization: Bearer ${{ secrets.RELEASE_API_TOKEN }}" \
+#            -H "Content-Type: application/json" \
+#            -d '{"version":"${{ github.ref_name }}","app":"my-app"}'
