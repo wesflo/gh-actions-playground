@@ -74,7 +74,7 @@ jobs:
 
   publish:
     name: Publish to Registry
-    needs: [test, build-lib]
+    needs: [test, build-lib, deploy-preprod]
     uses: wesflo/gh-actions-workflows/.github/workflows/publish.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
