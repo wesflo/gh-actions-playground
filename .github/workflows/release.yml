@@ -44,11 +44,11 @@ jobs:
   deploy-preprod:
     name: Deploy preprod (S3)
     needs: [test, build-iife]
-    environment: preprod
     uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
     with:
+      environment_name: preprod
       artifact_name: "dist-iife"
-      dist_dir: "dist"
+      dist_dir: "dist-iife"
       bucket: "wesflo-preprod-demo"
       region: ${{ vars.AWS_REGION || 'eu-central-1' }}
       cache_control: "public,max-age=300"
@@ -58,11 +58,11 @@ jobs:
   deploy-prod:
     name: Deploy prod (S3)
     needs: [deploy-preprod]
-    environment: prod
     uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
     with:
+      environment_name: prod
       artifact_name: "dist-iife"
-      dist_dir: "dist"
+      dist_dir: "dist-iife"
       bucket: "wesflo-prod-demo"
       region: ${{ vars.AWS_REGION || 'eu-central-1' }}
       cache_control: "public,max-age=3600"
