@@ -63,7 +63,7 @@ jobs:
     needs: [deploy-preprod]
     uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
     with:
-      environment_name: prod
+      environment_name: release
       artifact_name: "dist-iife"
       dist_dir: "dist-iife"
       bucket: "wesflo-prod-demo"
@@ -87,7 +87,7 @@ jobs:
   activate-release:
     name: Activate release (write DB version)
     needs: [deploy-prod]
-    environment: prod-db   # separates Gate
+    environment: prod-rollout   # separates Gate
     runs-on: ubuntu-latest
     steps:
       - name: Call release activation API
