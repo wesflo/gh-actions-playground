@@ -1,6 +1,6 @@
 {
   "name": "@wesflo/gh-actions-playground",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": false,
   "type": "module",
   "description": "Hello World Lit component + utils, built with Vite, tested with Vitest + happy-dom",
