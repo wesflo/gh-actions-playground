@@ -1,4 +1,4 @@
-name: Release (labels -> version)
+name: Release
 
 on:
   push:
@@ -92,8 +92,11 @@ jobs:
     steps:
       - name: Call release activation API
         run: |
-          echo "Hier wäre dann das CB getriggert. Version: ${{ github.ref_name }}"
+          echo "Hier wäre dann das CB getriggert. version: ${{ github.run_id }}; attempts: ${{github.run_attempt }}"
+          echo "version: ${{ github.run_id }};"
+          echo "attempts: ${{github.run_attempt }}"
+          echo "repo: ${{github.repository }}"
 #          curl -X POST "${{ secrets.RELEASE_API_URL }}" \
 #            -H "Authorization: Bearer ${{ secrets.RELEASE_API_TOKEN }}" \
 #            -H "Content-Type: application/json" \
-#            -d '{"version":"${{ github.ref_name }}","app":"my-app"}'
+#            -d '{"v":"${{ github.run_id }}.${{github.run_attempt }}","repo":"${{ github.repository }}"}'
