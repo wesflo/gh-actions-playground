@@ -92,7 +92,7 @@ jobs:
     steps:
       - name: Call release activation API
         run: |
-          echo "Hier wäre dann das CB getriggert"
+          echo "Hier wäre dann das CB getriggert. Version: ${{ github.ref_name }}"
 #          curl -X POST "${{ secrets.RELEASE_API_URL }}" \
 #            -H "Authorization: Bearer ${{ secrets.RELEASE_API_TOKEN }}" \
 #            -H "Content-Type: application/json" \
