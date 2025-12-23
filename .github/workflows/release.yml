@@ -8,95 +8,16 @@ permissions:
   contents: write
   packages: write
   pull-requests: read
-  id-token: write   # wichtig für AWS OIDC (kann auch job-level gesetzt werden)
+  id-token: write
 
 concurrency:
   group: release-main
   cancel-in-progress: false
 
 jobs:
-  test:
-    name: Unit Tests
-    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
-    uses: wesflo/gh-actions-workflows/.github/workflows/test.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      test_command: "npm run test:c"
-
-  build-lib:
-    name: Build NPM Library
-    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      build_command: "npm run build"
-      upload_artifacts: true
-      artifact_name: "dist-lib"
-
-  build-iife:
-    name: Build IIFE bundle
-    uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      build_command: "npm run build:iife"
-      upload_artifacts: true
-      artifact_name: "dist-iife"
-
-  deploy-preprod:
-    name: Deploy preprod (S3)
-    needs: [test, build-iife]
-    uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
-    with:
-      environment_name: preprod
-      artifact_name: "dist-iife"
-      dist_dir: "dist-iife"
-      bucket: "wesflo-preprod-demo"
-      region: ${{ vars.AWS_REGION || 'eu-central-1' }}
-      cache_control: "public,max-age=300"
-    secrets:
-      aws_role_arn: ${{ secrets.AWS_ROLE_ARN_PREPROD }}
-
-  deploy-prod:
-    name: Deploy prod (S3)
-    needs: [deploy-preprod]
-    uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
-    with:
-      environment_name: release
-      artifact_name: "dist-iife"
-      dist_dir: "dist-iife"
-      bucket: "wesflo-prod-demo"
-      region: ${{ vars.AWS_REGION || 'eu-central-1' }}
-      cache_control: "public,max-age=3600"
-    secrets:
-      aws_role_arn: ${{ secrets.AWS_ROLE_ARN_PROD }}
-
-  publish:
-    name: Publish to Registry
-    needs: [test, build-lib, deploy-preprod]
-    uses: wesflo/gh-actions-workflows/.github/workflows/publish.yml@main
-    with:
-      workdir: ${{ vars.WORKDIR || '.' }}
-      node_version: ${{ vars.NODE_VERSION || '20' }}
-      npm_scope: ${{ vars.NPM_SCOPE || '@wesflo' }}
-      npm_registry: ${{ vars.NPM_REGISTRY || 'https://npm.pkg.github.com' }}
+  release:
+    uses: wesflo/gh-actions-workflows/.github/workflows/release-npm-iife.yml@main
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-
-  activate-release:
-    name: Activate release (write DB version)
-    needs: [deploy-prod]
-    environment: prod-rollout   # separates Gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call release activation API
-        run: |
-          echo "Hier wäre dann das CB getriggert. version: ${{ github.run_id }}; attempts: ${{github.run_attempt }}"
-          echo "version: ${{ github.run_id }};"
-          echo "attempts: ${{github.run_attempt }}"
-          echo "repo: ${{github.repository }}"
-#          curl -X POST "${{ secrets.RELEASE_API_URL }}" \
-#            -H "Authorization: Bearer ${{ secrets.RELEASE_API_TOKEN }}" \
-#            -H "Content-Type: application/json" \
-#            -d '{"v":"${{ github.run_id }}.${{github.run_attempt }}","repo":"${{ github.repository }}"}'
+      AWS_ROLE_ARN_PREPROD: ${{ secrets.AWS_ROLE_ARN_PREPROD }}
+      AWS_ROLE_ARN_PROD: ${{ secrets.AWS_ROLE_ARN_PROD }}
