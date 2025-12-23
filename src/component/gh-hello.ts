@@ -29,7 +29,7 @@ export class GhHello extends LitElement {
   `;
 
     @property({ type: String }) name: string = 'World';
-    @state() startCount: number = 1;
+    @state() startCount: number = 2;
 
     render() {
         return html`
