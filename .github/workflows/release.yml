@@ -17,7 +17,7 @@ jobs:
   test:
     # verhindert Loop bei release-commits vom Bot
     if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
-    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
+    uses: wesflo/gh-actions-workflows/.github/workflows/test.yml@main
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
@@ -50,4 +50,4 @@ jobs:
       node_version: ${{ vars.NODE_VERSION || '20' }}
       npm_scope: ${{ vars.WORKDIR || '@wesflo' }}
     secrets:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
