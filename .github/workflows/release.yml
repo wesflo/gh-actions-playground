@@ -44,7 +44,6 @@ jobs:
   deploy-preprod:
     name: Deploy preprod (S3)
     needs: [test, build-iife]
-    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
     environment: preprod
     uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
     with:
@@ -59,7 +58,6 @@ jobs:
   deploy-prod:
     name: Deploy prod (S3)
     needs: [deploy-preprod]
-    if: ${{ github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release):') }}
     environment: prod
     uses: wesflo/gh-actions-workflows/.github/workflows/deploy-s3.yml@main
     with:
