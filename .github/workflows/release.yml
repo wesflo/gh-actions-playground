@@ -22,6 +22,7 @@ jobs:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
       test_command: "npm run test:c"
+      fetch-depth: 0
 
   build-lib:
     uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
@@ -31,6 +32,7 @@ jobs:
       build_command: "npm run build"
       upload_artifacts: true
       artifact_name: "dist-lib"
+      fetch-depth: 0
 
   build-iife:
     uses: wesflo/gh-actions-workflows/.github/workflows/build.yml@main
@@ -40,6 +42,7 @@ jobs:
       build_command: "npm run build:iife"
       upload_artifacts: true
       artifact_name: "dist-iife"
+      fetch-depth: 0
 
   publish:
     name: Publish to Registry
@@ -48,6 +51,7 @@ jobs:
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
-      npm_scope: "@wesflo"
+      npm_scope: ${{ vars.WORKDIR || '@wesflo' }}
+      fetch-depth: 0
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
