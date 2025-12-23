@@ -48,6 +48,7 @@ jobs:
     with:
       workdir: ${{ vars.WORKDIR || '.' }}
       node_version: ${{ vars.NODE_VERSION || '20' }}
-      npm_scope: ${{ vars.WORKDIR || '@wesflo' }}
+      npm_scope: ${{ vars.NPM_SCOPE || '@wesflo' }}
+      npm_registry: ${{ vars.NPM_REGISTRY || 'https://npm.pkg.github.com' }}
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
