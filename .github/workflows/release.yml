@@ -10,10 +10,6 @@ permissions:
   pull-requests: read
   id-token: write
 
-concurrency:
-  group: release-main
-  cancel-in-progress: false
-
 jobs:
   release:
     uses: wesflo/gh-actions-workflows/.github/workflows/release-npm-iife.yml@main

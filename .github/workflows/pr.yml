@@ -5,4 +5,8 @@ on:
 
 jobs:
   test:
-    uses: wesflo/gh-actions-workflows/.github/workflows/test-coverage.yml@main
+    uses: wesflo/gh-actions-workflows/.github/workflows/test.yml@main
+
+  prettify:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    uses: wesflo/gh-actions-workflows/.github/workflows/prettify.yml@main
